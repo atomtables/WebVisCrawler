@@ -1,3 +1,4 @@
+import datetime
 import json
 import multiprocessing.process
 import os
@@ -9,6 +10,8 @@ import termios
 import threading
 import time
 import tty
+from xmlrpc.client import DateTime
+
 import psutil
 from multiprocessing import Queue
 from colorama import Fore, Style
@@ -116,6 +119,11 @@ class WebVisCrawlerManager:
             while True:
                 self.old_settings = termios.tcgetattr(sys.stdin)
                 tty.setraw(sys.stdin.fileno())
+                itex = 0
+                amt_processed = 0
+                amt_found = 0
+                per_second = [0, 0, 0, 0, 0] # in the last 5 seconds
+                per_second_found = [0, 0, 0, 0, 0]
                 while self.queuesize > 0 or self.processing > 0:
                     if len(self.adjacency) > 1000: # dump every 1000 entries
                         self.dump_adjacency()
@@ -141,6 +149,18 @@ class WebVisCrawlerManager:
                             self.get_threads = not self.get_threads
                             tty.setraw(sys.stdin.fileno())
                     if not self.verbose: time.sleep(0.1)
+                    itex += 1
+                    if itex % 10 == 0:
+                        old_amt_processed = amt_processed
+                        amt_processed += self.processed
+                        per_second.pop(0)
+                        per_second.append(amt_processed - old_amt_processed)
+                        old_amt_found = amt_found
+                        amt_found += self.found
+                        per_second_found.pop(0)
+                        per_second_found.append(amt_found - old_amt_found)
+                    if itex % 50 == 0:
+                        print(f"{Fore.LIGHTWHITE_EX}[update {datetime.datetime.now().strftime('%H:%M:%S')}]: {Fore.YELLOW} Avg: {int(sum(per_second) / len([x for x in per_second if x > 0]))} processed per second, Max: {max(per_second)} processed per second, {Fore.GREEN} Avg: {int(sum(per_second_found) / len([x for x in per_second_found if x > 0]))} found per second, Max: {max(per_second_found)} found per second{Fore.RESET}\033[K", end='\r\n')
                     continue
                 termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.old_settings)
                 print(f"{Fore.LIGHTBLACK_EX}[main]: Queue is empty and processes are done, double checking...\033[K{Fore.RESET}")
