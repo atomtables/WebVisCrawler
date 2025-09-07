@@ -1,0 +1,6 @@
+adj.txt*
+log.txt
+visual.txt
+result.json
+.venv
+.idea

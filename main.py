@@ -1,0 +1,47 @@
+import argparse
+import multiprocessing
+
+from colorama import Fore, Style
+
+# handle sigterm as a keyboardinterrupt (unix)
+def raisex(_, __):
+    raise KeyboardInterrupt()
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='WebVisCrawl web crawler')
+    parser.add_argument('url', nargs='?',
+                        help=f'Starting URL')
+    parser.add_argument('-o', '--output-file', default='adj.txt',
+                        help='Path to output adjacency file (default: adj.txt)')
+    parser.add_argument("-v", "--verbose", action="store_true",)
+    parser.add_argument("-d", "--debug", action="store_true", help="Enable debug logging to log.txt")
+    parser.add_argument("-D", "--debug-output", default="log.txt",
+                        help="Path to debug log file (default: log.txt)")
+    parser.add_argument("-P", "--processes", type=int, default=multiprocessing.cpu_count(),
+                        help=f"Number of processes to use (default: {multiprocessing.cpu_count()})")
+    parser.add_argument("-T", "--threads", type=int, default=2000,
+                        help=f"Max threads per process (default: {2000})")
+    parser.add_argument("-L", "--level", type=int, default=0,
+                        help=f"Max crawl depth level (default: none)")
+    args = parser.parse_args()
+
+    if not args.url:
+        print("Please provide a starting URL.")
+        exit(1)
+    HEAD = args.url
+    NUM_PROCESSES = args.processes
+    MAX_CONCURRENT = args.threads
+    LEVEL_LIMIT = args.level
+    DEBUG = args.debug
+    VERBOSE = args.verbose
+    OUTPUT_FILE = args.output_file
+    DEBUG_FILE = args.debug_output
+
+    open(DEBUG_FILE, 'w').close()
+    print(f"{Fore.GREEN}{Style.BRIGHT}WebVisCrawl:{Style.NORMAL}{Fore.LIGHTGREEN_EX} an atomtables project...{Style.RESET_ALL}")
+    print(f"{Fore.BLUE}{Style.DIM}➜ press {Style.NORMAL + Style.BRIGHT}i{Style.DIM} to show process details{Fore.RESET}")
+    print(f"{Fore.BLUE}{Style.DIM}➜ press {Style.NORMAL + Style.BRIGHT}t{Style.DIM} to show subprocess threads{Style.RESET_ALL}")
+
+    from WebVisCrawlerManager import WebVisCrawlerManager
+    crawl = WebVisCrawlerManager(start_url=HEAD, debug=DEBUG, verbose=VERBOSE, output_file=OUTPUT_FILE, debug_file=DEBUG_FILE)
+    crawl.start(num_processes=NUM_PROCESSES, max_concurrent=MAX_CONCURRENT, level_limit=LEVEL_LIMIT)
