@@ -253,9 +253,13 @@ class WebVisCrawlVis:
         <button onclick="zoomOut()">Zoom Out</button>
         <button onclick="resetView()">Reset View</button>
         <button onclick="togglePhysics()">Toggle Physics</button>
+        <button onclick="showEverything()">Show All</button>
+        <button onclick="hideBachelors()">Hide Bachelors</button>
+        <button onclick="hideSingles()">Hide Singles</button>
+        <button onclick="hideBoth()">Hide Both</button>
     </div>
     <div id="info">
-        <div id="shelf">
+        <div id="shelf" style="max-width: 300px; display: flex; flex-direction: row; flex-wrap: wrap; gap: 5px;">
         </div>
         <p>Nodes: <span id="nodes">{len(subgraph.nodes)}</span> of {len(self.graph.nodes)}, Edges: {len(subgraph.edges)}</p>
         <p>Zoom with mouse wheel, pan by dragging</p>
@@ -360,6 +364,29 @@ class WebVisCrawlVis:
             network = new vis.Network(container, newData, options);
             document.querySelector("#nodes").innerText = toShow.length;
         }}
+        
+        function hideBoth() {{
+        network.destroy();
+            let toShow = [];
+            nodes.forEach(function(node) {{
+                if (node.color !== "#F39C12" && node.color !== "#8E44AD") {{
+                    toShow.push(node);
+                }}
+            }});
+            let toEdge = []
+            let ids = toShow.map(n => n.id);
+            edges.forEach(function(edge) {{
+                if (ids.includes(edge.from) && ids.includes(edge.to)) {{
+                    toEdge.push(edge);
+                }}
+            }});
+            let newData = {{
+                nodes: toShow,
+                edges: toEdge
+            }}      
+            network = new vis.Network(container, newData, options);
+            document.querySelector("#nodes").innerText = toShow.length;
+        }}
 
         function zoomIn() {{
             network.zoomIn(0.2);
@@ -393,6 +420,55 @@ class WebVisCrawlVis:
             }}
         }});
         
+        // function to alert all outgoing connections of a node id using a confirm buffered by 50
+        function showOutgoing(nodeId) {{
+            var outgoing = network.getConnectedNodes(nodeId, 'to');
+            if (outgoing.length === 0) {{
+                alert("No other outgoing connections.");
+                return;
+            }}
+            let count = 0;
+            var first50 = outgoing.slice(count, count + 50);
+            count += 50;
+            while (first50.length > 0) {{
+                if (confirm(first50.join('\\n') + "\\n Click OK to see more.")) {{
+                    try {{
+                        first50 = outgoing.slice(count, count + 50);
+                        count += 50;
+                    }} catch {{
+                        first50 = outgoing.slice(count);
+                    }}
+                }} else {{
+                    break;
+                }}
+            }}
+            alert("done");
+        }}
+        
+        function showIncoming(nodeId) {{
+            var incoming = network.getConnectedNodes(nodeId, 'from');
+            if (incoming.length === 1) {{
+                alert("No other incoming connections.");
+                return;
+            }}
+            let count = 0;
+            var first50 = incoming.slice(count, count + 50);
+            count += 50;
+            while (first50.length > 0) {{
+                if (confirm(first50.join('\\n') + "\\n Click OK to see more.")) {{
+                    try {{
+                        first50 = incoming.slice(count, count + 50);
+                        count += 50;
+                    }} catch {{
+                        first50 = incoming.slice(count);
+                    }}
+                }} else {{
+                    break;
+                }}
+            }}
+            alert("done");
+        }}
+        
         network.on("click", function(params) {{
             if (params.nodes.length > 0) {{
                 var nodeId = params.nodes[0];
@@ -400,6 +476,9 @@ class WebVisCrawlVis:
                 document.querySelector("#shelf").innerHTML = `
                 <strong>${{node.label}}</strong><br/>
                 <button onClick="alert('${{nodeId}}')">Get URL</button>
+                <button onClick="network.focus('${{nodeId}}', {{scale: 1.5, animation: true}})">Focus</button>
+                <button onClick="showOutgoing('${{nodeId}}')">Show Outgoing connections</button>
+                <button onClick="showIncoming('${{nodeId}}')">Show Incoming connections</button>
                 `;
             }} else {{
                 document.querySelector("#shelf").innerHTML = "";
