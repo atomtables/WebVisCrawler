@@ -12,7 +12,8 @@ from warnings import deprecated
 
 import requests
 from bs4 import BeautifulSoup
-from colorama import Fore
+from colorama import Fore, Style
+
 
 def clean_href(href):
     parsed_url = urlparse(href)

@@ -10,7 +10,6 @@ import termios
 import threading
 import time
 import tty
-import webbrowser
 
 import psutil
 from multiprocessing import Queue
@@ -223,11 +222,13 @@ class WebVisCrawlerManager:
             if self.visualise:
                 print(f"{Fore.GREEN}[main]: Visualising crawl...\033[K{Fore.RESET}")
                 try:
-                    from vis import WebVisCrawlVis
-                    val = WebVisCrawlVis()
-                    val.create_graph(self.output_file)
-                    val.create_pyvis_graph(output_file="OUTPUT.html")
-                    webbrowser.open(f"file://{os.path.relpath('OUTPUT.html')}")
+                    if os.path.exists(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'vis.py')):
+                        import subprocess
+                        response = subprocess.run([f'python3 {os.path.join(os.path.dirname(__file__), 'vis.py')} --head {self.start_url} {self.output_file}'], shell=True, check=True, cwd=os.getcwd())
+                        if response.returncode != 0:
+                            raise Exception(f"vis.py exited with code {response.returncode}")
+                    else:
+                        raise FileNotFoundError("vis.py not found in " + os.path.abspath(os.path.dirname(__file__)))
                 except Exception as e:
                     print(f"{Fore.RED}[main]: Failed to visualise: {repr(e)}\033[K{Fore.RESET}")
 

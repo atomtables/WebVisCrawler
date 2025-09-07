@@ -1,8 +1,6 @@
 import sys
 import argparse
 import multiprocessing
-from argparse import Namespace
-from multiprocessing import freeze_support
 
 from colorama import Fore, Style
 
