@@ -17,7 +17,7 @@ def truncate_middle(s, n):
     n_2 = int(int(n) / 2 - 3)
     # whatever's left
     n_1 = int(n - n_2 - 3)
-    return '{0}...{1}'.format(s[:n_1], s[-n_2:])
+    return f'{s[:n_1]}...{s[-n_2:]}'
 
 
 class WebVisCrawlVis:
@@ -43,16 +43,18 @@ class WebVisCrawlVis:
         queuex = [self.head]
         while len(queuex) > 0:
             current = queuex.pop()
+            curren = current.removesuffix("::F:")
+            if current + '::F:' in obj:
+                current += '::F:'
             if current not in obj:
-                nodes[current] = {'status': 'errored', 'level': 0}
+                nodes[curren] = {'status': 'bachelor', 'level': 0}
+                continue
+            if curren in nodes:
                 continue
             if current.endswith("::F:"):
-                nodes[current.removesuffix("::F:")] = {'status': 'errored', 'level': 0}
+                nodes[curren] = {'status': 'errored', 'level': 0}
                 continue
-            current = current.removesuffix("::F:")
-            if current in nodes:
-                continue
-            nodes[current] = {'status': "normal", 'level': 0}
+            nodes[curren] = {'status': "normal", 'level': 0}
             for link in obj[current]:
                 if link not in nodes:
                     queuex.append(link)
@@ -135,12 +137,16 @@ class WebVisCrawlVis:
         # Prepare nodes and edges data
         nodes_data = []
         for node, attrs in subgraph.nodes(data=True):
+            if node == 'https://copyright.web.cern.ch':
+                print(node, list(subgraph.predecessors(node)), list(subgraph.neighbors(node)))
             # Set node color based on status
             color = "#5DADE2"  # Default blue
             if attrs.get('status') == 'errored':
                 color = "#E74C3C"  # Red
             elif node == self.head:
                 color = "#27AE60"  # Green for root
+            elif node in list(subgraph.predecessors(node)) or node in list(subgraph.neighbors(node)):
+                color = "#982467"  # nodes with self-loop
             elif len(list(subgraph.predecessors(node))) == 1 and len(list(subgraph.neighbors(node))) == 0:
                 color = "#95A5A6" # nodes with 1 parent and no children
             elif len(list(subgraph.predecessors(node))) == 1:
@@ -300,7 +306,7 @@ class WebVisCrawlVis:
                 "stabilization": {{
                     "enabled": true,
                     "fit": true,
-                    "iterations": 1000,
+                    "iterations": 20,
                     "onlyDynamicEdges": false,
                     "updateInterval": 50
                 }}

@@ -16,7 +16,7 @@ from multiprocessing import Queue
 from colorama import Fore, Style
 from pybloom_live import ScalableBloomFilter
 
-from WebVisCrawlerProcess import WebVisCrawlerProcess
+from WebVisCrawlerProcess import WebVisCrawlerProcess, clean_href
 from app import raisex
 
 
@@ -224,7 +224,7 @@ class WebVisCrawlerManager:
                 try:
                     if os.path.exists(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'vis.py')):
                         import subprocess
-                        response = subprocess.run([f'python3 {os.path.join(os.path.dirname(__file__), 'vis.py')} --head {self.start_url} {self.output_file}'], shell=True, check=True, cwd=os.getcwd())
+                        response = subprocess.run([f'python3 {os.path.join(os.path.dirname(__file__), 'vis.py')} --head {clean_href(self.start_url)} {self.output_file}'], shell=True, check=True, cwd=os.getcwd())
                         if response.returncode != 0:
                             raise Exception(f"vis.py exited with code {response.returncode}")
                     else:
@@ -304,6 +304,7 @@ class WebVisCrawlerManager:
                 url: str; level: int
                 try: url, level = self.queued.get(False)
                 except queue.Empty: continue
+                url = clean_href(url)
                 self.queuesize -= 1
                 self.processing += 1
                 self.adjacency_lock.wait_until_unlocked()
