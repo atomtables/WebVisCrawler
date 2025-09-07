@@ -23,6 +23,8 @@ if __name__ == "__main__":
                         help=f"Max threads per process (default: {2000})")
     parser.add_argument("-L", "--level", type=int, default=0,
                         help=f"Max crawl depth level (default: none)")
+    parser.add_argument("-u", "--update-interval", type=int, default=5,
+                        help=f"Status update interval in seconds (default: 5)")
     args = parser.parse_args()
 
     if not args.url:
@@ -36,6 +38,7 @@ if __name__ == "__main__":
     VERBOSE = args.verbose
     OUTPUT_FILE = args.output_file
     DEBUG_FILE = args.debug_output
+    UPDATE_INTERVAL = args.update_interval
 
     open(DEBUG_FILE, 'w').close()
     print(f"{Fore.GREEN}{Style.BRIGHT}WebVisCrawl:{Style.NORMAL}{Fore.LIGHTGREEN_EX} an atomtables project...{Style.RESET_ALL}")
@@ -44,4 +47,4 @@ if __name__ == "__main__":
 
     from WebVisCrawlerManager import WebVisCrawlerManager
     crawl = WebVisCrawlerManager(start_url=HEAD, debug=DEBUG, verbose=VERBOSE, output_file=OUTPUT_FILE, debug_file=DEBUG_FILE)
-    crawl.start(num_processes=NUM_PROCESSES, max_concurrent=MAX_CONCURRENT, level_limit=LEVEL_LIMIT)
+    crawl.start(num_processes=NUM_PROCESSES, max_concurrent=MAX_CONCURRENT, level_limit=LEVEL_LIMIT, update_interval=UPDATE_INTERVAL)

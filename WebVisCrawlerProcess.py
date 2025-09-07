@@ -179,9 +179,9 @@ class WebVisCrawlerProcess:
                 if soft < 4096:
                     resource.setrlimit(resource.RLIMIT_NOFILE, (int(1.2 * self.max_concurrent), hard))
                     self.printx(f"[{self.process}]: Set ulimit to {int(1.2 * self.max_concurrent)} from {soft}")
-                    print(f"{Fore.LIGHTBLACK_EX}[{self.process}]: Set ulimit to {int(1.2 * self.max_concurrent)} from {soft}{Fore.RESET}", end='\r\n')
+                    print(f"{Style.DIM}[{self.process}]: Set ulimit to {int(1.2 * self.max_concurrent)} from {soft}{Style.RESET_ALL}", end='\r\n')
             except Exception as e:
-                print(f"{Fore.LIGHTBLACK_EX}[{self.process}]: Failed to set ulimit: {repr(e)}{Fore.RESET}, program may skip many nodes", end='\r\n')
+                print(f"{Style.DIM}[{self.process}]: Failed to set ulimit: {repr(e)}{Style.RESET_ALL}, program may skip many nodes", end='\r\n')
                 self.printx(f"[{self.process}]: Failed to set ulimit: {str(e), repr(e)}")
 
         while True:
@@ -191,7 +191,10 @@ class WebVisCrawlerProcess:
                 if obj is None:
                     self.printx("Received shutdown signal, exiting...")
                     while len([t for t in threading.enumerate() if not t.daemon]) > self.default_amt_threads:
-                        print(f"[{self.process}]: Waiting for threads to finish: [{threading.enumerate()}]")
+                        if len([t for t in threading.enumerate() if not t.daemon]) > 10:
+                            print(f"[{self.process}]: Waiting for {len([t for t in threading.enumerate() if not t.daemon])} threads to finish...")
+                        else:
+                            print(f"[{self.process}]: Waiting for threads to finish: [{threading.enumerate()}]")
                         time.sleep(1)
                     break
                 if obj.get('get_threads'):
