@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=80.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "WebVisCrawl"
+version = "0.0.0"
+description = "A web visualization and crawling tool"
+authors = [
+    { name = "Adithiya Venkatakrishnan", email = "adithiya.venkatakrishnan@atomtables.dev" }
+]
+readme = "README.md"
+requires-python = ">=3.8"
+
+[project.scripts]
+webviscrawler = "app:parse_run"
+webvisualiser = "vis:main"
+
+[tool.setuptools]
+py-modules = ["app", "vis", "WebVisCrawlerManager", "WebVisCrawlerProcess"]
