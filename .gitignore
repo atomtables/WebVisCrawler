@@ -4,3 +4,7 @@ visual.txt
 result.json
 .venv
 .idea
+OUTPUT.html
+build
+*.egg-info
+*.bin

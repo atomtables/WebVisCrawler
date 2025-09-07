@@ -10,6 +10,7 @@ import termios
 import threading
 import time
 import tty
+import webbrowser
 
 import psutil
 from multiprocessing import Queue
@@ -17,7 +18,7 @@ from colorama import Fore, Style
 from pybloom_live import ScalableBloomFilter
 
 from WebVisCrawlerProcess import WebVisCrawlerProcess
-from main import raisex
+from app import raisex
 
 
 class PassiveLock:
@@ -72,7 +73,8 @@ class WebVisCrawlerManager:
     level_limit: int = 0
     update_interval: int = 5
 
-    def __init__(self, start_url=None, debug=False, verbose=False, output_file="adj.txt", debug_file="log.txt"):
+    def __init__(self, start_url=None, debug=False, verbose=False, output_file="adj.txt", debug_file="log.txt", visualise=False, max_nodes_to_find=0):
+        self.visualise = visualise
         self.old_settings = None
         self.queued = Queue()
         self.queuesize = 1
@@ -81,6 +83,7 @@ class WebVisCrawlerManager:
         self.verbose = verbose
         self.output_file = output_file
         self.debug_file = debug_file
+        self.max_nodes_to_find = max_nodes_to_find
 
         if start_url is None:
             raise ValueError("A starting URL must be provided.")
@@ -92,8 +95,8 @@ class WebVisCrawlerManager:
         with self.adjacency_lock:
             with open(f"{self.output_file}.part{self.adj_part}", "w", buffering=16394) as file:
                 adjnew = {}
-                for key in self.adjacency:
-                    adjnew[key] = list(self.adjacency[key])
+                for k in self.adjacency:
+                    adjnew[k] = list(self.adjacency[k])
                 json.dump(adjnew, file)
             self.adj_part += 1
             self.adjacency = {}
@@ -115,21 +118,25 @@ class WebVisCrawlerManager:
             th.start()
             self.threads.append(th)
         signal.signal(signal.SIGTERM, raisex)
-
+        no_tty = False
         try:
             while True:
-                self.old_settings = termios.tcgetattr(sys.stdin)
-                tty.setraw(sys.stdin.fileno())
+                try:
+                    self.old_settings = termios.tcgetattr(sys.stdin)
+                    tty.setraw(sys.stdin.fileno())
+                except Exception as e:
+                    no_tty = True
+                    print(f"{Fore.RED}[main]: Failed to set terminal to raw mode: {repr(e)}\033[K{Fore.RESET}")
                 itex = 0
-                amt_processed = 0
-                amt_found = 0
                 per_second = [0] * update_interval # in the last 5 seconds
+                per_second_diff = [0] * update_interval
                 per_second_found = [0] * update_interval
+                per_second_found_diff = [0] * update_interval
                 while self.queuesize > 0 or self.processing > 0:
                     if len(self.adjacency) > 1000: # dump every 1000 entries
                         self.dump_adjacency()
                     self.update()
-                    if select.select([sys.stdin], [], [], 0)[0]:
+                    if not no_tty and select.select([sys.stdin], [], [], 0)[0]:
                         key = sys.stdin.read(1)
                         if key == '\x03':  # Ctrl-C
                             termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.old_settings)
@@ -152,16 +159,18 @@ class WebVisCrawlerManager:
                     if not self.verbose: time.sleep(0.1)
                     itex += 1
                     if update_interval != 0 and itex % 10 == 0:
-                        amt_processed = self.processed - sum(per_second)
-                        amt_found = self.found - sum(per_second_found)
                         per_second.pop(0)
-                        per_second.append(amt_processed)
+                        per_second.append(self.processed)
+                        per_second_diff.pop(0)
+                        per_second_diff.append(self.processed - (per_second_diff[-2] if len(per_second_diff) > 1 else 0))
                         per_second_found.pop(0)
-                        per_second_found.append(amt_found)
+                        per_second_found.append(self.found)
+                        per_second_found_diff.pop(0)
+                        per_second_found_diff.append(self.found - (per_second_found_diff[-2] if len(per_second_found_diff) > 1 else 0))
                     if update_interval != 0 and itex % (update_interval * 10) == 0:
-                        print(f"{Fore.LIGHTWHITE_EX}[update {datetime.datetime.now().strftime('%H:%M:%S')} last {update_interval} seconds]: {Fore.GREEN} Found: [ {Style.DIM}{sum(per_second_found)} URLs total {Style.NORMAL}{int(sum(per_second_found) / len([x for x in per_second_found if x > 0]))} URLs/s avg. {Style.BRIGHT}{max(per_second_found)} URLs/s max. ]{Style.NORMAL} {Fore.YELLOW}Processed: [ {Style.DIM}{sum(per_second)} URLs total {Style.NORMAL}{int(sum(per_second) / len([x for x in per_second if x > 0]))} URLs/s avg. {Style.BRIGHT}{max(per_second)} URLs/s max. ]{Style.RESET_ALL}\033[K", end='\r\n')
+                        print(f"{Fore.LIGHTWHITE_EX}[update {datetime.datetime.now().strftime('%H:%M:%S')} last {update_interval} seconds]: {Fore.GREEN} Found: [ {Style.DIM}{(per_second_found[-1] - per_second_found[0])} URLs total {Style.NORMAL}{int((per_second_found[-1] - per_second_found[0]) / max(1, update_interval))} URLs/s avg. {Style.BRIGHT}{max(per_second_found_diff)} URLs/s max. ]{Style.NORMAL} {Fore.YELLOW}Processed: [ {Style.DIM}{per_second[-1] - per_second[0]} URLs total {Style.NORMAL}{int((per_second[-1] - per_second[0]) / max(1, update_interval))} URLs/s avg. {Style.BRIGHT}{max(per_second_diff)} URLs/s max. ]{Style.RESET_ALL}\033[K", end='\r\n')
                     continue
-                termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.old_settings)
+                if not no_tty: termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.old_settings)
                 print(f"{Style.DIM}[main]: Queue is empty and processes are done, double checking...\033[K{Fore.RESET}")
                 self.update()
                 time.sleep(5)
@@ -169,11 +178,11 @@ class WebVisCrawlerManager:
                     break
         # Handle exceptions
         except (KeyboardInterrupt,):
-            termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.old_settings)
+            if not no_tty: termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.old_settings)
             print(f"{Fore.RED}[main]: signal 2: Shutting down running processes...\033[K{Fore.RESET}")
             print("[main]: signal 2: Shutting down running processes...\033[K", file=open(self.debug_file, 'a')) if self.debug else None
         except Exception as e:
-            termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.old_settings)
+            if not no_tty: termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.old_settings)
             print(f"{Fore.RED}[main]: Unhandled exception in main: {e}\033[K{Fore.RESET}")
             print(f"[main]: Unhandled exception in main: {e}\033[K", file=open(self.debug_file, 'a')) if self.debug else None
         finally:
@@ -211,6 +220,16 @@ class WebVisCrawlerManager:
             # Generate output files
             self.generate_output_files()
             print(f"{Fore.GREEN}[main]: All processes completed. Exiting...\033[K{Fore.RESET}")
+            if self.visualise:
+                print(f"{Fore.GREEN}[main]: Visualising crawl...\033[K{Fore.RESET}")
+                try:
+                    from vis import WebVisCrawlVis
+                    val = WebVisCrawlVis()
+                    val.create_graph(self.output_file)
+                    val.create_pyvis_graph(output_file="OUTPUT.html")
+                    webbrowser.open(f"file://{os.path.relpath('OUTPUT.html')}")
+                except Exception as e:
+                    print(f"{Fore.RED}[main]: Failed to visualise: {repr(e)}\033[K{Fore.RESET}")
 
     @staticmethod
     def _process_starter(inq, outq, core):
@@ -271,7 +290,7 @@ class WebVisCrawlerManager:
                             self.adjacency[obj['url']] = []
                         self.adjacency[obj['url']].append(obj['href'])
                         if obj['href'] not in self.seen:
-                            if self.level_limit == 0 or obj['level'] < self.level_limit:
+                            if (self.level_limit == 0 or obj['level'] < self.level_limit) and (self.max_nodes_to_find == 0 or self.found < self.max_nodes_to_find):
                                 self.queued.put((obj['href'], obj['level']))
                                 self.queuesize += 1
                             self.found += 1

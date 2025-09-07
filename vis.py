@@ -29,11 +29,12 @@ class WebVisCrawlVis:
         self.temp_html_path = None
         self.head = "https://hackclub.com"
 
-    def _get_domain(self, url):
+    @staticmethod
+    def _get_domain(url):
         try:
             domain = urlparse(url).netloc
             return domain if domain else url[:30]
-        except:
+        except (Exception,):
             return url[:30]
 
     def _parse_adjacency_file(self, obj):
@@ -134,9 +135,6 @@ class WebVisCrawlVis:
         # Prepare nodes and edges data
         nodes_data = []
         for node, attrs in subgraph.nodes(data=True):
-            domain = self._get_domain(node)
-            label = domain if show_labels else ""
-
             # Set node color based on status
             color = "#5DADE2"  # Default blue
             if attrs.get('status') == 'errored':
