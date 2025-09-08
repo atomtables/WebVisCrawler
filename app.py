@@ -8,7 +8,7 @@ from colorama import Fore, Style
 def raisex(_, __):
     raise KeyboardInterrupt()
 
-def run(url=None, processes=multiprocessing.cpu_count(), threads=2000, level=0, debug=False, verbose=False, output_file="adj.txt", debug_output="log.txt", update_interval=5, visualise=False, max_nodes_to_find=0):
+def run(url=None, processes=multiprocessing.cpu_count(), threads=500, level=0, debug=False, verbose=False, output_file="adj.txt", debug_output="log.txt", update_interval=5, visualise=False, max_nodes_to_find=0):
     if not url:
         print("Please provide a starting URL.")
         sys.exit(1)
@@ -29,7 +29,7 @@ def run(url=None, processes=multiprocessing.cpu_count(), threads=2000, level=0, 
     print(f"{Fore.BLUE}{Style.DIM}➜ press {Style.NORMAL + Style.BRIGHT}t{Style.DIM} to show subprocess threads{Style.RESET_ALL}")
 
     from WebVisCrawlerManager import WebVisCrawlerManager
-    crawl = WebVisCrawlerManager(start_url=HEAD, debug=DEBUG, verbose=VERBOSE, output_file=OUTPUT_FILE, debug_file=DEBUG_FILE, visualise=VISUALISE)
+    crawl = WebVisCrawlerManager(start_url=HEAD, debug=DEBUG, verbose=VERBOSE, output_file=OUTPUT_FILE, debug_file=DEBUG_FILE, visualise=VISUALISE, max_nodes_to_find=max_nodes_to_find)
     crawl.start(num_processes=NUM_PROCESSES, max_concurrent=MAX_CONCURRENT, level_limit=LEVEL_LIMIT, update_interval=UPDATE_INTERVAL)
 def parse_run():
     parser = argparse.ArgumentParser(description='WebVisCrawl web crawler')
@@ -43,8 +43,8 @@ def parse_run():
                         help="Path to debug log file (default: log.txt)")
     parser.add_argument("-P", "--processes", type=int, default=multiprocessing.cpu_count(),
                         help=f"Number of processes to use (default: {multiprocessing.cpu_count()})")
-    parser.add_argument("-T", "--threads", type=int, default=2000,
-                        help=f"Max threads per process (default: {2000})")
+    parser.add_argument("-T", "--threads", type=int, default=500,
+                        help=f"Max threads per process (default: {500})")
     parser.add_argument("-L", "--level", type=int, default=0,
                         help=f"Max crawl depth level (default: none)")
     parser.add_argument("-u", "--update-interval", type=int, default=5,

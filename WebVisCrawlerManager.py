@@ -44,7 +44,7 @@ class PassiveLock:
         self.unlock()
 
 class WebVisCrawlerManager:
-    processes = []
+    processes: list[multiprocessing.Process] = []
     threads = [] # to check in on processes
     subprocess_threadcounts = []
 
@@ -59,8 +59,10 @@ class WebVisCrawlerManager:
     processed = 0 # most important to ensure we don't be aggressive
     skipped = 0
     queued: Queue
+    queue_for_queue: list = []
     queuesize: int
     finish = False
+    quiet_death = False
 
     adjacency_lock = PassiveLock()
 
@@ -90,6 +92,14 @@ class WebVisCrawlerManager:
             self.start_url = start_url
         self.queued.put((self.start_url, 0))
 
+    def queue_putter(self):
+        while not self.quiet_death and not self.finish:
+            try:
+                url, level = self.queue_for_queue.pop(0)
+                self.queued.put((url, level))
+                self.queuesize += 1
+            except IndexError: pass
+
     def dump_adjacency(self):
         with self.adjacency_lock:
             with open(f"{self.output_file}.part{self.adj_part}", "w", buffering=16394) as file:
@@ -105,13 +115,14 @@ class WebVisCrawlerManager:
               f'{Fore.BLUE}Processing: {self.processing}, {Fore.CYAN}Threads: {'+'.join(map(str, self.subprocess_threadcounts))}, '#Empty: {len(self.empty)}, Skipped: {len(self.skipping)}, '
               f'{Fore.RED}Failed: {len(self.failed)},{Fore.RESET + Style.DIM} Processes: {len([t.is_alive() for t in self.threads])}, Queued: {self.queuesize}, Adj: {len(self.adjacency)}\033[K{Style.RESET_ALL}', end="\r")
 
-    def start(self, num_processes=None, max_concurrent=2000, level_limit=0, update_interval=5):
+    def start(self, num_processes=None, max_concurrent=500, level_limit=0, update_interval=5):
         self.update_interval = update_interval
         self.max_concurrent = max_concurrent
         self.level_limit = level_limit
         if num_processes is None:
             num_processes = multiprocessing.cpu_count()
         self.subprocess_threadcounts = [0] * num_processes
+        threading.Thread(target=self.queue_putter, daemon=True).start()
         for _ in range(num_processes):
             th = threading.Thread(target=self.process_handler, args=(_,))
             th.start()
@@ -128,10 +139,10 @@ class WebVisCrawlerManager:
                     print(f"{Fore.RED}[main]: Failed to set terminal to raw mode: {repr(e)}\033[K{Fore.RESET}")
                 itex = 0
                 per_second = [0] * update_interval # in the last 5 seconds
-                per_second_diff = [0] * update_interval
+                per_second_diff = [0] * (update_interval - 1)
                 per_second_found = [0] * update_interval
-                per_second_found_diff = [0] * update_interval
-                while self.queuesize > 0 or self.processing > 0:
+                per_second_found_diff = [0] * (update_interval - 1)
+                while (self.queuesize > 0 or self.processing > 0) and not (self.found >= self.max_nodes_to_find != 0):
                     if len(self.adjacency) > 1000: # dump every 1000 entries
                         self.dump_adjacency()
                     self.update()
@@ -160,15 +171,27 @@ class WebVisCrawlerManager:
                     if update_interval != 0 and itex % 10 == 0:
                         per_second.pop(0)
                         per_second.append(self.processed)
-                        per_second_diff.pop(0)
-                        per_second_diff.append(self.processed - (per_second_diff[-2] if len(per_second_diff) > 1 else 0))
+                        for i in range(len(per_second) - 1):
+                            per_second_diff[i] = per_second[i + 1] - per_second[i]
                         per_second_found.pop(0)
                         per_second_found.append(self.found)
-                        per_second_found_diff.pop(0)
-                        per_second_found_diff.append(self.found - (per_second_found_diff[-2] if len(per_second_found_diff) > 1 else 0))
+                        for i in range(len(per_second_found) - 1):
+                            per_second_found_diff[i] = per_second_found[i + 1] - per_second_found[i]
                     if update_interval != 0 and itex % (update_interval * 10) == 0:
                         print(f"{Fore.LIGHTWHITE_EX}[update {datetime.datetime.now().strftime('%H:%M:%S')} last {update_interval} seconds]: {Fore.GREEN} Found: [ {Style.DIM}{(per_second_found[-1] - per_second_found[0])} URLs total {Style.NORMAL}{int((per_second_found[-1] - per_second_found[0]) / max(1, update_interval))} URLs/s avg. {Style.BRIGHT}{max(per_second_found_diff)} URLs/s max. ]{Style.NORMAL} {Fore.YELLOW}Processed: [ {Style.DIM}{per_second[-1] - per_second[0]} URLs total {Style.NORMAL}{int((per_second[-1] - per_second[0]) / max(1, update_interval))} URLs/s avg. {Style.BRIGHT}{max(per_second_diff)} URLs/s max. ]{Style.RESET_ALL}\033[K", end='\r\n')
                     continue
+                if self.found >= self.max_nodes_to_find != 0:
+                    if not no_tty: termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.old_settings)
+                    print(f"{Fore.MAGENTA}[main]: Reached max nodes to find limit of {self.max_nodes_to_find}, waiting for processes to finish...\033[K{Fore.RESET}")
+                    self.quiet_death = True
+                    old = self.queued
+                    self.queued = Queue()
+                    self.queuesize = 0
+                    old.close()
+                    while sum(self.subprocess_threadcounts) > 0:
+                        self.update()
+                        time.sleep(0.1)
+                    break
                 if not no_tty: termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.old_settings)
                 print(f"{Style.DIM}[main]: Queue is empty and processes are done, double checking...\033[K{Fore.RESET}")
                 self.update()
@@ -231,6 +254,19 @@ class WebVisCrawlerManager:
                         raise FileNotFoundError("vis.py not found in " + os.path.abspath(os.path.dirname(__file__)))
                 except Exception as e:
                     print(f"{Fore.RED}[main]: Failed to visualise: {repr(e)}\033[K{Fore.RESET}")
+            while len([t for t in threading.enumerate() if not t.daemon]) > 1:
+                print(f"[main]: Waiting for threads to finish: [{threading.enumerate()}]")
+                time.sleep(0.1)
+            try:
+                while len([p for p in self.processes if p.is_alive()]) > 0:
+                    print(f"[main]: Waiting for processes to finish: {[p.pid for p in self.processes if p.is_alive()]} (Ctrl+C to kill them)", end='\r')
+                    time.sleep(0.1)
+            except KeyboardInterrupt:
+                for p in self.processes:
+                    if p.is_alive():
+                        p.kill()
+                print(f"\n{Fore.RED}[main]: Killed all processes.\033[K{Fore.RESET}")
+            sys.exit(0)
 
     @staticmethod
     def _process_starter(inq, outq, core):
@@ -267,8 +303,8 @@ class WebVisCrawlerManager:
 
         got_threads = False
 
-        while True:
-            while self.queuesize > 0 or self.processing > 0:
+        while not self.finish:
+            while (self.queuesize > 0 or self.processing > 0) and not self.finish:
                 if self.get_threads != got_threads:
                     inq.put({'task': False, 'get_threads': True})
                     got_threads = self.get_threads
@@ -292,7 +328,7 @@ class WebVisCrawlerManager:
                         self.adjacency[obj['url']].append(obj['href'])
                         if obj['href'] not in self.seen:
                             if (self.level_limit == 0 or obj['level'] < self.level_limit) and (self.max_nodes_to_find == 0 or self.found < self.max_nodes_to_find):
-                                self.queued.put((obj['href'], obj['level']))
+                                self.queue_for_queue.append((obj['href'], obj['level']))
                                 self.queuesize += 1
                             self.found += 1
                         self.seen.add(obj['href'])
