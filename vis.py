@@ -137,8 +137,6 @@ class WebVisCrawlVis:
         # Prepare nodes and edges data
         nodes_data = []
         for node, attrs in subgraph.nodes(data=True):
-            if node == 'https://copyright.web.cern.ch':
-                print(node, list(subgraph.predecessors(node)), list(subgraph.neighbors(node)))
             # Set node color based on status
             color = "#5DADE2"  # Default blue
             if attrs.get('status') == 'errored':
