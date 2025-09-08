@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "WebVisCrawl"
-version = "0.0.0"
+version = "0.0.1"
 description = "A web visualization and crawling tool"
 authors = [
     { name = "Adithiya Venkatakrishnan", email = "adithiya.venkatakrishnan@atomtables.dev" }
 ]
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 
 [project.scripts]
 webviscrawler = "app:parse_run"
