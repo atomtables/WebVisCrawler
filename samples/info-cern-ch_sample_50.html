@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Web Crawler Visualization</title>
+    <script type="text/javascript" src="https://unpkg.com/vis-network@10.0.1/dist/vis-network.min.js"></script>
+    <link href="https://unpkg.com/vis-network@10.0.1/styles/vis-network.min.css" rel="stylesheet" type="text/css" />
+    <style type="text/css">
+        #mynetwork {
+            width: 100%;
+            height: 100vh;
+            border: 1px solid lightgray;
+            background-color: #f9f9f9;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+        #controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 999;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+        }
+        button {
+            margin: 2px;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+        #info {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            z-index: 999;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+        }
+        html, body {
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+        #mynetwork {
+            width: 100vw;
+            height: 100vh;
+            border: 1px solid lightgray;
+            background-color: #f9f9f9;
+            position: absolute;
+            top: 0;
+            left: 0;
+            overflow: hidden;
+        }
+        #controls, #info, #main {
+            z-index: 999;
+        }
+    </style>
+</head>
+<body>
+    <div id="main" style="position: fixed; bottom: 10px; left: 10px; z-index: 999;"></div>
+    <div id="mynetwork"></div>
+    <div id="controls">
+        <button onclick="zoomIn()">Zoom In</button>
+        <button onclick="zoomOut()">Zoom Out</button>
+        <button onclick="resetView()">Reset View</button>
+        <button onclick="togglePhysics()">Toggle Physics</button>
+        <button onclick="showEverything()">Show All</button>
+        <button onclick="hideBachelors()">Hide Bachelors</button>
+        <button onclick="hideSingles()">Hide Singles</button>
+        <button onclick="hideBoth()">Hide Both</button>
+    </div>
+    <div id="info">
+        <div id="shelf" style="max-width: 300px; display: flex; flex-direction: row; flex-wrap: wrap; gap: 5px;">
+        </div>
+        <p>Nodes: <span id="nodes">50</span> of 82796, Edges: 135</p>
+        <p>Zoom with mouse wheel, pan by dragging</p>
+        <p>Click on nodes to select and move them</p>
+    </div>
+    <script type="text/javascript">
+        // Direct node and edge data embedding
+        var nodes = new vis.DataSet([{"id": "http://line-mode.cern.ch/www/hypertext/WWW/TheProject.html", "label": "http://line-mod...Project.html", "title": "http://line-mode.cern.ch/www/hypertext/WWW/TheProject.html\nIncoming connections: 2\nOutgoing connections: 0", "color": "#8E44AD", "shape": "dot", "size": 12, "borderWidth": 1, "font": {"size": 12}}, {"id": "https://alumni.cern", "label": "https://alumni.cern", "title": "https://alumni.cern\nIncoming connections: 7\nOutgoing connections: 3", "color": "#982467", "shape": "dot", "size": 20, "borderWidth": 1, "font": {"size": 12}}, {"id": "https://cern.ch/supplierdatabase", "label": "https://cern.ch...lierdatabase", "title": "https://cern.ch/supplierdatabase\nIncoming connections: 1\nOutgoing connections: 0", "color": "#95A5A6", "shape": "dot", "size": 11, "borderWidth": 1, "font": {"size": 12}}, {"id": "https://procurement.cern.ch/aspx/Home", "label": "https://procure...ch/aspx/Home", "title": "https://procurement.cern.ch/aspx/Home\nIncoming connections: 3\nOutgoing connections: 0", "color": "#8E44AD", "shape": "dot", "size": 13, "borderWidth": 1, "font": {"size": 12}}, {"id": "https://www.youtube.com/about", "label": "https://www.youtube.com/about", "title": "https://www.youtube.com/about\nIncoming connections: 1\nOutgoing connections: 0", "color": "#E74C3C", "shape": "square", "size": 11, "borderWidth": 1, "font": {"size": 12}}, {"id": "https://visit.cern", "label": "https://visit.cern", "title": "https://visit.cern\nIncoming connections: 4\nOutgoing connections: 4", "color": "#5DADE2", "shape": "dot", "size": 18, "borderWidth": 1, "font": {"size": 12}}, {"id": "http://www.linkedin.com/company/cern", "label": "http://www.link...company/cern", "title": "http://www.linkedin.com/company/cern\nIncoming connections: 4\nOutgoing connections: 5", "color": "#5DADE2", "shape": "dot", "size": 19, "borderWidth": 1, "font": {"size": 12}}, {"id": "http://info.cern.ch", "label": "http://info.cern.ch", "title": "http://info.cern.ch\nIncoming connections: 2\nOutgoing connections: 4", "color": "#5DADE2", "shape": "dot", "size": 16, "borderWidth": 1, "font": {"size": 12}}, {"id": "http://www.instagram.com/cern", "label": "http://www.instagram.com/cern", "title": "http://www.instagram.com/cern\nIncoming connections: 5\nOutgoing connections: 0", "color": "#8E44AD", "shape": "dot", "size": 15, "borderWidth": 1, "font": {"size": 12}}, {"id": "https://procurement.web.cern.ch/system/files/document/supplier-impact-survey-report.pdf", "label": "https://procure...y-report.pdf", "title": "https://procurement.web.cern.ch/system/files/document/supplier-impact-survey-report.pdf\nIncoming connections: 1\nOutgoing connections: 0", "color": "#E74C3C", "shape": "square", "size": 11, "borderWidth": 1, "font": {"size": 12}}, {"id": "https://ch.linkedin.com/in/maria-girone-4b375020", "label": "https://ch.link...one-4b375020", "title": "https://ch.linkedin.com/in/maria-girone-4b375020\nIncoming connections: 1\nOutgoing connections: 0", "color": "#E74C3C", "shape": "square", "size": 11, "borderWidth": 1, "font": {"size": 12}}, {"id": "http://home.web.cern.ch/about", "label": "http://home.web.cern.ch/about", "title": "http://home.web.cern.ch/about\nIncoming connections: 2\nOutgoing connections: 16", "color": "#5DADE2", "shape": "dot", "size": 28, "borderWidth": 1, "font": {"size": 12}}, {"id": "https://www.youtube.com/about/copyright", "label": "https://www.you...ut/copyright", "title": "https://www.youtube.com/about/copyright\nIncoming connections: 1\nOutgoing connections: 0", "color": "#95A5A6", "shape": "dot", "size": 11, "borderWidth": 1, "font": {"size": 12}}, {"id": "http://line-mode.cern.ch", "label": "http://line-mode.cern.ch", "title": "http://line-mode.cern.ch\nIncoming connections: 1\nOutgoing connections: 1", "color": "#F39C12", "shape": "dot", "size": 12, "borderWidth": 1, "font": {"size": 12}}, {"id": "https://www.youtube.com/ads", "label": "https://www.youtube.com/ads", "title": "https://www.youtube.com/ads\nIncoming connections: 1\nOutgoing connections: 0", "color": "#E74C3C", "shape": "square", "size": 11, "borderWidth": 1, "font": {"size": 12}}, {"id": "https://project-hl-lhc-industry.web.cern.ch", "label": "https://project....web.cern.ch", "title": "https://project-hl-lhc-industry.web.cern.ch\nIncoming connections: 1\nOutgoing connections: 3", "color": "#F39C12", "shape": "dot", "size": 14, "borderWidth": 1, "font": {"size": 12}}, {"id": "https://www.youtube.com/about/policies", "label": "https://www.you...out/policies", "title": "https://www.youtube.com/about/policies\nIncoming connections: 1\nOutgoing connections: 0", "color": "#95A5A6", "shape": "dot", "size": 11, "borderWidth": 1, "font": {"size": 12}}, {"id": "https://cernandsocietyfoundation.cern", "label": "https://cernand...ndation.cern", "title": "https://cernandsocietyfoundation.cern\nIncoming connections: 8\nOutgoing connections: 5", "color": "#5DADE2", "shape": "dot", "size": 23, "borderWidth": 1, "font": {"size": 12}}, {"id": "https://procurement.web.cern.ch/user/login", "label": "https://procure...h/user/login", "title": "https://procurement.web.cern.ch/user/login\nIncoming connections: 1\nOutgoing connections: 1", "color": "#F39C12", "shape": "dot", "size": 12, "borderWidth": 1, "font": {"size": 12}}, {"id": "http://cern.ch/procurement", "label": "http://cern.ch/procurement", "title": "http://cern.ch/procurement\nIncoming connections: 3\nOutgoing connections: 12", "color": "#5DADE2", "shape": "dot", "size": 25, "borderWidth": 1, "font": {"size": 12}}, {"id": "https://tv.youtube.com/learn/nflsundayticket", "label": "https://tv.yout...sundayticket", "title": "https://tv.youtube.com/learn/nflsundayticket\nIncoming connections: 1\nOutgoing connections: 0", "color": "#95A5A6", "shape": "dot", "size": 11, "borderWidth": 1, "font": {"size": 12}}, {"id": "http://www.youtube.com/user/cerntv", "label": "http://www.yout.../user/cerntv", "title": "http://www.youtube.com/user/cerntv\nIncoming connections: 4\nOutgoing connections: 9", "color": "#5DADE2", "shape": "dot", "size": 23, "borderWidth": 1, "font": {"size": 12}}, {"id": "https://www.youtube.com/about/press", "label": "https://www.you.../about/press", "title": "https://www.youtube.com/about/press\nIncoming connections: 1\nOutgoing connections: 0", "color": "#E74C3C", "shape": "square", "size": 11, "borderWidth": 1, "font": {"size": 12}}, {"id": "https://www.linkedin.com/jobs/associate-jobs", "label": "https://www.lin...sociate-jobs", "title": "https://www.linkedin.com/jobs/associate-jobs\nIncoming connections: 2\nOutgoing connections: 0", "color": "#8E44AD", "shape": "dot", "size": 12, "borderWidth": 1, "font": {"size": 12}}, {"id": "http://cern.ch/supplierdatabase", "label": "http://cern.ch/...lierdatabase", "title": "http://cern.ch/supplierdatabase\nIncoming connections: 1\nOutgoing connections: 0", "color": "#95A5A6", "shape": "dot", "size": 11, "borderWidth": 1, "font": {"size": 12}}, {"id": "https://developers.google.com/youtube", "label": "https://develop....com/youtube", "title": "https://developers.google.com/youtube\nIncoming connections: 2\nOutgoing connections: 1", "color": "#982467", "shape": "dot", "size": 13, "borderWidth": 1, "font": {"size": 12}}, {"id": "http://info.cern.ch/hypertext/WWW/TheProject.html", "label": "http://info.cer...Project.html", "title": "http://info.cern.ch/hypertext/WWW/TheProject.html\nIncoming connections: 4\nOutgoing connections: 0", "color": "#8E44AD", "shape": "dot", "size": 14, "borderWidth": 1, "font": {"size": 12}}, {"id": "https://alumni.cern/page/hire-alumni", "label": "https://alumni..../hire-alumni", "title": "https://alumni.cern/page/hire-alumni\nIncoming connections: 3\nOutgoing connections: 3", "color": "#982467", "shape": "dot", "size": 16, "borderWidth": 1, "font": {"size": 12}}, {"id": "https://cern.ch/knowledgetransfer", "label": "https://cern.ch...edgetransfer", "title": "https://cern.ch/knowledgetransfer\nIncoming connections: 3\nOutgoing connections: 3", "color": "#5DADE2", "shape": "dot", "size": 16, "borderWidth": 1, "font": {"size": 12}}, {"id": "http://www.facebook.com/cern", "label": "http://www.facebook.com/cern", "title": "http://www.facebook.com/cern\nIncoming connections: 4\nOutgoing connections: 0", "color": "#E74C3C", "shape": "square", "size": 14, "borderWidth": 1, "font": {"size": 12}}, {"id": "https://www.tiktok.com/@cern_ontiktok", "label": "https://www.tik...ern_ontiktok", "title": "https://www.tiktok.com/@cern_ontiktok\nIncoming connections: 3\nOutgoing connections: 0", "color": "#8E44AD", "shape": "dot", "size": 13, "borderWidth": 1, "font": {"size": 12}}, {"id": "https://www.youtube.com/howyoutubeworks", "label": "https://www.you...youtubeworks", "title": "https://www.youtube.com/howyoutubeworks\nIncoming connections: 1\nOutgoing connections: 0", "color": "#E74C3C", "shape": "square", "size": 11, "borderWidth": 1, "font": {"size": 12}}, {"id": "https://www.youtube.com/creators", "label": "https://www.you...com/creators", "title": "https://www.youtube.com/creators\nIncoming connections: 1\nOutgoing connections: 0", "color": "#E74C3C", "shape": "square", "size": 11, "borderWidth": 1, "font": {"size": 12}}, {"id": "http://project-hl-lhc-industry.web.cern.ch", "label": "http://project-....web.cern.ch", "title": "http://project-hl-lhc-industry.web.cern.ch\nIncoming connections: 1\nOutgoing connections: 3", "color": "#F39C12", "shape": "dot", "size": 14, "borderWidth": 1, "font": {"size": 12}}, {"id": "https://voisins.web.cern.ch/en", "label": "https://voisins.web.cern.ch/en", "title": "https://voisins.web.cern.ch/en\nIncoming connections: 3\nOutgoing connections: 4", "color": "#5DADE2", "shape": "dot", "size": 17, "borderWidth": 1, "font": {"size": 12}}, {"id": "https://info.cern.ch", "label": "https://info.cern.ch", "title": "https://info.cern.ch\nIncoming connections: 0\nOutgoing connections: 4", "color": "#27AE60", "shape": "dot", "size": 14, "borderWidth": 1, "font": {"size": 12}}, {"id": "https://lnkd.in/gyJqb59N", "label": "https://lnkd.in/gyJqb59N", "title": "https://lnkd.in/gyJqb59N\nIncoming connections: 1\nOutgoing connections: 0", "color": "#95A5A6", "shape": "dot", "size": 11, "borderWidth": 1, "font": {"size": 12}}, {"id": "https://x.com/CERN", "label": "https://x.com/CERN", "title": "https://x.com/CERN\nIncoming connections: 4\nOutgoing connections: 0", "color": "#8E44AD", "shape": "dot", "size": 14, "borderWidth": 1, "font": {"size": 12}}, {"id": "https://cern.ch/worldwideweb", "label": "https://cern.ch/worldwideweb", "title": "https://cern.ch/worldwideweb\nIncoming connections: 1\nOutgoing connections: 0", "color": "#E74C3C", "shape": "square", "size": 11, "borderWidth": 1, "font": {"size": 12}}, {"id": "https://advinfo.cern.ch", "label": "https://advinfo.cern.ch", "title": "https://advinfo.cern.ch\nIncoming connections: 1\nOutgoing connections: 0", "color": "#95A5A6", "shape": "dot", "size": 11, "borderWidth": 1, "font": {"size": 12}}, {"id": "https://www.linkedin.com/company/nasa", "label": "https://www.lin...company/nasa", "title": "https://www.linkedin.com/company/nasa\nIncoming connections: 2\nOutgoing connections: 2", "color": "#982467", "shape": "dot", "size": 14, "borderWidth": 1, "font": {"size": 12}}, {"id": "https://home.cern/user/login", "label": "https://home.cern/user/login", "title": "https://home.cern/user/login\nIncoming connections: 3\nOutgoing connections: 1", "color": "#5DADE2", "shape": "dot", "size": 14, "borderWidth": 1, "font": {"size": 12}}, {"id": "https://cern.ch/mice", "label": "https://cern.ch/mice", "title": "https://cern.ch/mice\nIncoming connections: 1\nOutgoing connections: 0", "color": "#E74C3C", "shape": "square", "size": 11, "borderWidth": 1, "font": {"size": 12}}, {"id": "https://copyright.web.cern.ch", "label": "https://copyright.web.cern.ch", "title": "https://copyright.web.cern.ch\nIncoming connections: 12\nOutgoing connections: 6", "color": "#982467", "shape": "dot", "size": 28, "borderWidth": 1, "font": {"size": 12}}, {"id": "https://careers.cern", "label": "https://careers.cern", "title": "https://careers.cern\nIncoming connections: 7\nOutgoing connections: 3", "color": "#5DADE2", "shape": "dot", "size": 20, "borderWidth": 1, "font": {"size": 12}}, {"id": "https://home.cern", "label": "https://home.cern", "title": "https://home.cern\nIncoming connections: 12\nOutgoing connections: 16", "color": "#5DADE2", "shape": "dot", "size": 38, "borderWidth": 1, "font": {"size": 12}}, {"id": "https://dk.linkedin.com/school/technical-university-of-denmark", "label": "https://dk.link...y-of-denmark", "title": "https://dk.linkedin.com/school/technical-university-of-denmark\nIncoming connections: 1\nOutgoing connections: 0", "color": "#E74C3C", "shape": "square", "size": 11, "borderWidth": 1, "font": {"size": 12}}, {"id": "http://home.web.cern.ch/topics/birth-web", "label": "http://home.web...cs/birth-web", "title": "http://home.web.cern.ch/topics/birth-web\nIncoming connections: 2\nOutgoing connections: 21", "color": "#5DADE2", "shape": "dot", "size": 33, "borderWidth": 1, "font": {"size": 12}}, {"id": "https://first-website.web.cern.ch", "label": "https://first-w....web.cern.ch", "title": "https://first-website.web.cern.ch\nIncoming connections: 1\nOutgoing connections: 1", "color": "#F39C12", "shape": "dot", "size": 12, "borderWidth": 1, "font": {"size": 12}}, {"id": "https://linktr.ee/CERN_official", "label": "https://linktr....ERN_official", "title": "https://linktr.ee/CERN_official\nIncoming connections: 3\nOutgoing connections: 4", "color": "#5DADE2", "shape": "dot", "size": 17, "borderWidth": 1, "font": {"size": 12}}]);
+        var edges = new vis.DataSet([{"from": "https://alumni.cern", "to": "https://alumni.cern/page/hire-alumni", "arrows": "to", "physics": false}, {"from": "https://alumni.cern", "to": "https://alumni.cern", "arrows": "to", "physics": false}, {"from": "https://alumni.cern", "to": "https://cernandsocietyfoundation.cern", "arrows": "to", "physics": false}, {"from": "https://visit.cern", "to": "https://copyright.web.cern.ch", "arrows": "to", "physics": false}, {"from": "https://visit.cern", "to": "https://careers.cern", "arrows": "to", "physics": false}, {"from": "https://visit.cern", "to": "https://home.cern", "arrows": "to", "physics": false}, {"from": "https://visit.cern", "to": "https://cernandsocietyfoundation.cern", "arrows": "to", "physics": false}, {"from": "http://www.linkedin.com/company/cern", "to": "https://lnkd.in/gyJqb59N", "arrows": "to", "physics": false}, {"from": "http://www.linkedin.com/company/cern", "to": "https://dk.linkedin.com/school/technical-university-of-denmark", "arrows": "to", "physics": false}, {"from": "http://www.linkedin.com/company/cern", "to": "https://ch.linkedin.com/in/maria-girone-4b375020", "arrows": "to", "physics": false}, {"from": "http://www.linkedin.com/company/cern", "to": "https://www.linkedin.com/jobs/associate-jobs", "arrows": "to", "physics": false}, {"from": "http://www.linkedin.com/company/cern", "to": "https://www.linkedin.com/company/nasa", "arrows": "to", "physics": false}, {"from": "http://info.cern.ch", "to": "http://info.cern.ch/hypertext/WWW/TheProject.html", "arrows": "to", "physics": false}, {"from": "http://info.cern.ch", "to": "http://home.web.cern.ch/about", "arrows": "to", "physics": false}, {"from": "http://info.cern.ch", "to": "http://home.web.cern.ch/topics/birth-web", "arrows": "to", "physics": false}, {"from": "http://info.cern.ch", "to": "http://line-mode.cern.ch/www/hypertext/WWW/TheProject.html", "arrows": "to", "physics": false}, {"from": "http://home.web.cern.ch/about", "to": "http://www.youtube.com/user/cerntv", "arrows": "to", "physics": false}, {"from": "http://home.web.cern.ch/about", "to": "http://cern.ch/procurement", "arrows": "to", "physics": false}, {"from": "http://home.web.cern.ch/about", "to": "https://www.tiktok.com/@cern_ontiktok", "arrows": "to", "physics": false}, {"from": "http://home.web.cern.ch/about", "to": "http://www.instagram.com/cern", "arrows": "to", "physics": false}, {"from": "http://home.web.cern.ch/about", "to": "http://www.linkedin.com/company/cern", "arrows": "to", "physics": false}, {"from": "http://home.web.cern.ch/about", "to": "https://home.cern/user/login", "arrows": "to", "physics": false}, {"from": "http://home.web.cern.ch/about", "to": "https://linktr.ee/CERN_official", "arrows": "to", "physics": false}, {"from": "http://home.web.cern.ch/about", "to": "https://voisins.web.cern.ch/en", "arrows": "to", "physics": false}, {"from": "http://home.web.cern.ch/about", "to": "https://x.com/CERN", "arrows": "to", "physics": false}, {"from": "http://home.web.cern.ch/about", "to": "https://alumni.cern", "arrows": "to", "physics": false}, {"from": "http://home.web.cern.ch/about", "to": "https://cern.ch/knowledgetransfer", "arrows": "to", "physics": false}, {"from": "http://home.web.cern.ch/about", "to": "https://cernandsocietyfoundation.cern", "arrows": "to", "physics": false}, {"from": "http://home.web.cern.ch/about", "to": "https://copyright.web.cern.ch", "arrows": "to", "physics": false}, {"from": "http://home.web.cern.ch/about", "to": "https://careers.cern", "arrows": "to", "physics": false}, {"from": "http://home.web.cern.ch/about", "to": "https://visit.cern", "arrows": "to", "physics": false}, {"from": "http://home.web.cern.ch/about", "to": "http://www.facebook.com/cern", "arrows": "to", "physics": false}, {"from": "http://line-mode.cern.ch", "to": "http://info.cern.ch/hypertext/WWW/TheProject.html", "arrows": "to", "physics": false}, {"from": "https://project-hl-lhc-industry.web.cern.ch", "to": "https://home.cern", "arrows": "to", "physics": false}, {"from": "https://project-hl-lhc-industry.web.cern.ch", "to": "https://procurement.cern.ch/aspx/Home", "arrows": "to", "physics": false}, {"from": "https://project-hl-lhc-industry.web.cern.ch", "to": "https://copyright.web.cern.ch", "arrows": "to", "physics": false}, {"from": "https://cernandsocietyfoundation.cern", "to": "https://visit.cern", "arrows": "to", "physics": false}, {"from": "https://cernandsocietyfoundation.cern", "to": "https://copyright.web.cern.ch", "arrows": "to", "physics": false}, {"from": "https://cernandsocietyfoundation.cern", "to": "https://careers.cern", "arrows": "to", "physics": false}, {"from": "https://cernandsocietyfoundation.cern", "to": "https://home.cern", "arrows": "to", "physics": false}, {"from": "https://cernandsocietyfoundation.cern", "to": "https://alumni.cern", "arrows": "to", "physics": false}, {"from": "https://procurement.web.cern.ch/user/login", "to": "https://home.cern", "arrows": "to", "physics": false}, {"from": "http://cern.ch/procurement", "to": "https://procurement.web.cern.ch/user/login", "arrows": "to", "physics": false}, {"from": "http://cern.ch/procurement", "to": "https://home.cern", "arrows": "to", "physics": false}, {"from": "http://cern.ch/procurement", "to": "https://cern.ch/mice", "arrows": "to", "physics": false}, {"from": "http://cern.ch/procurement", "to": "https://project-hl-lhc-industry.web.cern.ch", "arrows": "to", "physics": false}, {"from": "http://cern.ch/procurement", "to": "http://project-hl-lhc-industry.web.cern.ch", "arrows": "to", "physics": false}, {"from": "http://cern.ch/procurement", "to": "https://procurement.cern.ch/aspx/Home", "arrows": "to", "physics": false}, {"from": "http://cern.ch/procurement", "to": "https://alumni.cern/page/hire-alumni", "arrows": "to", "physics": false}, {"from": "http://cern.ch/procurement", "to": "https://cern.ch/supplierdatabase", "arrows": "to", "physics": false}, {"from": "http://cern.ch/procurement", "to": "https://copyright.web.cern.ch", "arrows": "to", "physics": false}, {"from": "http://cern.ch/procurement", "to": "https://advinfo.cern.ch", "arrows": "to", "physics": false}, {"from": "http://cern.ch/procurement", "to": "http://cern.ch/supplierdatabase", "arrows": "to", "physics": false}, {"from": "http://cern.ch/procurement", "to": "https://procurement.web.cern.ch/system/files/document/supplier-impact-survey-report.pdf", "arrows": "to", "physics": false}, {"from": "http://www.youtube.com/user/cerntv", "to": "https://developers.google.com/youtube", "arrows": "to", "physics": false}, {"from": "http://www.youtube.com/user/cerntv", "to": "https://www.youtube.com/howyoutubeworks", "arrows": "to", "physics": false}, {"from": "http://www.youtube.com/user/cerntv", "to": "https://www.youtube.com/ads", "arrows": "to", "physics": false}, {"from": "http://www.youtube.com/user/cerntv", "to": "https://www.youtube.com/about/press", "arrows": "to", "physics": false}, {"from": "http://www.youtube.com/user/cerntv", "to": "https://www.youtube.com/about/copyright", "arrows": "to", "physics": false}, {"from": "http://www.youtube.com/user/cerntv", "to": "https://www.youtube.com/creators", "arrows": "to", "physics": false}, {"from": "http://www.youtube.com/user/cerntv", "to": "https://www.youtube.com/about/policies", "arrows": "to", "physics": false}, {"from": "http://www.youtube.com/user/cerntv", "to": "https://www.youtube.com/about", "arrows": "to", "physics": false}, {"from": "http://www.youtube.com/user/cerntv", "to": "https://tv.youtube.com/learn/nflsundayticket", "arrows": "to", "physics": false}, {"from": "https://developers.google.com/youtube", "to": "https://developers.google.com/youtube", "arrows": "to", "physics": false}, {"from": "https://alumni.cern/page/hire-alumni", "to": "https://alumni.cern/page/hire-alumni", "arrows": "to", "physics": false}, {"from": "https://alumni.cern/page/hire-alumni", "to": "https://alumni.cern", "arrows": "to", "physics": false}, {"from": "https://alumni.cern/page/hire-alumni", "to": "https://cernandsocietyfoundation.cern", "arrows": "to", "physics": false}, {"from": "https://cern.ch/knowledgetransfer", "to": "https://copyright.web.cern.ch", "arrows": "to", "physics": false}, {"from": "https://cern.ch/knowledgetransfer", "to": "https://home.cern", "arrows": "to", "physics": false}, {"from": "https://cern.ch/knowledgetransfer", "to": "https://alumni.cern", "arrows": "to", "physics": false}, {"from": "http://project-hl-lhc-industry.web.cern.ch", "to": "https://home.cern", "arrows": "to", "physics": false}, {"from": "http://project-hl-lhc-industry.web.cern.ch", "to": "https://procurement.cern.ch/aspx/Home", "arrows": "to", "physics": false}, {"from": "http://project-hl-lhc-industry.web.cern.ch", "to": "https://copyright.web.cern.ch", "arrows": "to", "physics": false}, {"from": "https://voisins.web.cern.ch/en", "to": "https://copyright.web.cern.ch", "arrows": "to", "physics": false}, {"from": "https://voisins.web.cern.ch/en", "to": "https://careers.cern", "arrows": "to", "physics": false}, {"from": "https://voisins.web.cern.ch/en", "to": "https://home.cern", "arrows": "to", "physics": false}, {"from": "https://voisins.web.cern.ch/en", "to": "https://cernandsocietyfoundation.cern", "arrows": "to", "physics": false}, {"from": "https://info.cern.ch", "to": "http://info.cern.ch/hypertext/WWW/TheProject.html", "arrows": "to", "physics": false}, {"from": "https://info.cern.ch", "to": "http://home.web.cern.ch/about", "arrows": "to", "physics": false}, {"from": "https://info.cern.ch", "to": "http://home.web.cern.ch/topics/birth-web", "arrows": "to", "physics": false}, {"from": "https://info.cern.ch", "to": "http://line-mode.cern.ch/www/hypertext/WWW/TheProject.html", "arrows": "to", "physics": false}, {"from": "https://www.linkedin.com/company/nasa", "to": "https://www.linkedin.com/jobs/associate-jobs", "arrows": "to", "physics": false}, {"from": "https://www.linkedin.com/company/nasa", "to": "https://www.linkedin.com/company/nasa", "arrows": "to", "physics": false}, {"from": "https://home.cern/user/login", "to": "https://home.cern", "arrows": "to", "physics": false}, {"from": "https://copyright.web.cern.ch", "to": "http://www.youtube.com/user/cerntv", "arrows": "to", "physics": false}, {"from": "https://copyright.web.cern.ch", "to": "https://home.cern", "arrows": "to", "physics": false}, {"from": "https://copyright.web.cern.ch", "to": "http://www.instagram.com/cern", "arrows": "to", "physics": false}, {"from": "https://copyright.web.cern.ch", "to": "http://www.linkedin.com/company/cern", "arrows": "to", "physics": false}, {"from": "https://copyright.web.cern.ch", "to": "https://copyright.web.cern.ch", "arrows": "to", "physics": false}, {"from": "https://copyright.web.cern.ch", "to": "http://www.facebook.com/cern", "arrows": "to", "physics": false}, {"from": "https://careers.cern", "to": "https://copyright.web.cern.ch", "arrows": "to", "physics": false}, {"from": "https://careers.cern", "to": "https://home.cern", "arrows": "to", "physics": false}, {"from": "https://careers.cern", "to": "http://www.instagram.com/cern", "arrows": "to", "physics": false}, {"from": "https://home.cern", "to": "https://www.tiktok.com/@cern_ontiktok", "arrows": "to", "physics": false}, {"from": "https://home.cern", "to": "https://x.com/CERN", "arrows": "to", "physics": false}, {"from": "https://home.cern", "to": "https://cern.ch/knowledgetransfer", "arrows": "to", "physics": false}, {"from": "https://home.cern", "to": "https://visit.cern", "arrows": "to", "physics": false}, {"from": "https://home.cern", "to": "http://www.facebook.com/cern", "arrows": "to", "physics": false}, {"from": "https://home.cern", "to": "http://www.youtube.com/user/cerntv", "arrows": "to", "physics": false}, {"from": "https://home.cern", "to": "https://voisins.web.cern.ch/en", "arrows": "to", "physics": false}, {"from": "https://home.cern", "to": "https://copyright.web.cern.ch", "arrows": "to", "physics": false}, {"from": "https://home.cern", "to": "https://careers.cern", "arrows": "to", "physics": false}, {"from": "https://home.cern", "to": "http://cern.ch/procurement", "arrows": "to", "physics": false}, {"from": "https://home.cern", "to": "https://linktr.ee/CERN_official", "arrows": "to", "physics": false}, {"from": "https://home.cern", "to": "https://alumni.cern", "arrows": "to", "physics": false}, {"from": "https://home.cern", "to": "https://home.cern/user/login", "arrows": "to", "physics": false}, {"from": "https://home.cern", "to": "https://cernandsocietyfoundation.cern", "arrows": "to", "physics": false}, {"from": "https://home.cern", "to": "http://www.instagram.com/cern", "arrows": "to", "physics": false}, {"from": "https://home.cern", "to": "http://www.linkedin.com/company/cern", "arrows": "to", "physics": false}, {"from": "http://home.web.cern.ch/topics/birth-web", "to": "http://line-mode.cern.ch", "arrows": "to", "physics": false}, {"from": "http://home.web.cern.ch/topics/birth-web", "to": "https://www.tiktok.com/@cern_ontiktok", "arrows": "to", "physics": false}, {"from": "http://home.web.cern.ch/topics/birth-web", "to": "http://info.cern.ch", "arrows": "to", "physics": false}, {"from": "http://home.web.cern.ch/topics/birth-web", "to": "https://x.com/CERN", "arrows": "to", "physics": false}, {"from": "http://home.web.cern.ch/topics/birth-web", "to": "https://cern.ch/knowledgetransfer", "arrows": "to", "physics": false}, {"from": "http://home.web.cern.ch/topics/birth-web", "to": "https://cern.ch/worldwideweb", "arrows": "to", "physics": false}, {"from": "http://home.web.cern.ch/topics/birth-web", "to": "https://first-website.web.cern.ch", "arrows": "to", "physics": false}, {"from": "http://home.web.cern.ch/topics/birth-web", "to": "https://visit.cern", "arrows": "to", "physics": false}, {"from": "http://home.web.cern.ch/topics/birth-web", "to": "http://www.facebook.com/cern", "arrows": "to", "physics": false}, {"from": "http://home.web.cern.ch/topics/birth-web", "to": "http://www.youtube.com/user/cerntv", "arrows": "to", "physics": false}, {"from": "http://home.web.cern.ch/topics/birth-web", "to": "https://voisins.web.cern.ch/en", "arrows": "to", "physics": false}, {"from": "http://home.web.cern.ch/topics/birth-web", "to": "https://copyright.web.cern.ch", "arrows": "to", "physics": false}, {"from": "http://home.web.cern.ch/topics/birth-web", "to": "https://careers.cern", "arrows": "to", "physics": false}, {"from": "http://home.web.cern.ch/topics/birth-web", "to": "http://info.cern.ch/hypertext/WWW/TheProject.html", "arrows": "to", "physics": false}, {"from": "http://home.web.cern.ch/topics/birth-web", "to": "http://cern.ch/procurement", "arrows": "to", "physics": false}, {"from": "http://home.web.cern.ch/topics/birth-web", "to": "https://linktr.ee/CERN_official", "arrows": "to", "physics": false}, {"from": "http://home.web.cern.ch/topics/birth-web", "to": "https://alumni.cern", "arrows": "to", "physics": false}, {"from": "http://home.web.cern.ch/topics/birth-web", "to": "https://home.cern/user/login", "arrows": "to", "physics": false}, {"from": "http://home.web.cern.ch/topics/birth-web", "to": "https://cernandsocietyfoundation.cern", "arrows": "to", "physics": false}, {"from": "http://home.web.cern.ch/topics/birth-web", "to": "http://www.instagram.com/cern", "arrows": "to", "physics": false}, {"from": "http://home.web.cern.ch/topics/birth-web", "to": "http://www.linkedin.com/company/cern", "arrows": "to", "physics": false}, {"from": "https://first-website.web.cern.ch", "to": "http://info.cern.ch", "arrows": "to", "physics": false}, {"from": "https://linktr.ee/CERN_official", "to": "https://home.cern", "arrows": "to", "physics": false}, {"from": "https://linktr.ee/CERN_official", "to": "https://x.com/CERN", "arrows": "to", "physics": false}, {"from": "https://linktr.ee/CERN_official", "to": "https://cernandsocietyfoundation.cern", "arrows": "to", "physics": false}, {"from": "https://linktr.ee/CERN_official", "to": "https://careers.cern", "arrows": "to", "physics": false}]);
+
+        var container = document.getElementById('mynetwork');
+        var data = {
+            nodes: nodes,
+            edges: edges
+        };
+
+        var options = {
+            "configure": {
+                "enabled": false
+            },
+            "layout": {
+                "improvedLayout": false
+            },
+            "edges": {
+                "color": {
+                    "inherit": true
+                },
+                "smooth": {
+                    "enabled": true,
+                    "type": "dynamic"
+                }
+            },
+            "interaction": {
+                "dragNodes": true,
+                "hideEdgesOnDrag": false,
+                "hideNodesOnDrag": false
+            },
+            "physics": {
+                "enabled": false,
+                "stabilization": {
+                    "enabled": true,
+                    "fit": true,
+                    "iterations": 20,
+                    "onlyDynamicEdges": false,
+                    "updateInterval": 50
+                }
+            }
+        };
+
+        var network = new vis.Network(container, data, options);
+        document.querySelector("#nodes").innerText = nodes.length;
+        
+        function showEverything() {
+            // delete current network
+            network.destroy();
+            network = new vis.Network(container, data, options);
+            document.querySelector("#nodes").innerText = nodes.length;
+        }
+
+        function hideBachelors() {
+            network.destroy();
+            let toShow = [];
+            nodes.forEach(function(node) {
+                if (node.color !== "#8E44AD") {
+                    toShow.push(node);
+                }
+            });
+            let toEdge = []
+            let ids = toShow.map(n => n.id);
+            edges.forEach(function(edge) {
+                if (ids.includes(edge.from) && ids.includes(edge.to)) {
+                    toEdge.push(edge);
+                }
+            });
+            let newData = {
+                nodes: toShow,
+                edges: toEdge
+            }
+            network = new vis.Network(container, newData, options);
+            document.querySelector("#nodes").innerText = toShow.length;
+        }
+        
+        function hideSingles() {
+            network.destroy();
+            let toShow = [];
+            nodes.forEach(function(node) {
+                if (node.color !== "#F39C12") {
+                    toShow.push(node);
+                }
+            });
+            let toEdge = []
+            let ids = toShow.map(n => n.id);
+            edges.forEach(function(edge) {
+                if (ids.includes(edge.from) && ids.includes(edge.to)) {
+                    toEdge.push(edge); 
+                }
+            }); 
+            let newData = {
+                nodes: toShow,
+                edges: toEdge
+            }
+            network = new vis.Network(container, newData, options);
+            document.querySelector("#nodes").innerText = toShow.length;
+        }
+        
+        function hideBoth() {
+        network.destroy();
+            let toShow = [];
+            nodes.forEach(function(node) {
+                if (node.color !== "#F39C12" && node.color !== "#8E44AD") {
+                    toShow.push(node);
+                }
+            });
+            let toEdge = []
+            let ids = toShow.map(n => n.id);
+            edges.forEach(function(edge) {
+                if (ids.includes(edge.from) && ids.includes(edge.to)) {
+                    toEdge.push(edge);
+                }
+            });
+            let newData = {
+                nodes: toShow,
+                edges: toEdge
+            }      
+            network = new vis.Network(container, newData, options);
+            document.querySelector("#nodes").innerText = toShow.length;
+        }
+
+        function zoomIn() {
+            network.zoomIn(0.2);
+        }
+
+        function zoomOut() {
+            network.zoomOut(0.2);
+        }
+
+        function resetView() {
+            network.fit();
+        }
+
+        function togglePhysics() {
+            var physics = network.physics.options.enabled;
+            network.setOptions({ physics: { enabled: !physics } });
+            if (!physics) {
+                network.stabilize();
+                document.querySelector("#main").innerText = "Physics enabled.";
+            } else {
+                document.querySelector("#main").innerText = "Physics disabled.";
+            }
+        }
+
+        network.on("doubleClick", function(params) {
+            if (params.nodes.length > 0) {
+                network.focus(params.nodes[0], {
+                    scale: 1.2,
+                    animation: true
+                });
+            }
+        });
+        
+        // function to alert all outgoing connections of a node id using a confirm buffered by 50
+        function showOutgoing(nodeId) {
+            var outgoing = network.getConnectedNodes(nodeId, 'to');
+            if (outgoing.length === 0) {
+                alert("No other outgoing connections.");
+                return;
+            }
+            let count = 0;
+            var first50 = outgoing.slice(count, count + 50);
+            count += 50;
+            while (first50.length > 0) {
+                if (confirm(first50.join('\n') + "\n Click OK to see more.")) {
+                    try {
+                        first50 = outgoing.slice(count, count + 50);
+                        count += 50;
+                    } catch {
+                        first50 = outgoing.slice(count);
+                    }
+                } else {
+                    break;
+                }
+            }
+            alert("done");
+        }
+        
+        function showIncoming(nodeId) {
+            var incoming = network.getConnectedNodes(nodeId, 'from');
+            if (incoming.length === 1) {
+                alert("No other incoming connections.");
+                return;
+            }
+            let count = 0;
+            var first50 = incoming.slice(count, count + 50);
+            count += 50;
+            while (first50.length > 0) {
+                if (confirm(first50.join('\n') + "\n Click OK to see more.")) {
+                    try {
+                        first50 = incoming.slice(count, count + 50);
+                        count += 50;
+                    } catch {
+                        first50 = incoming.slice(count);
+                    }
+                } else {
+                    break;
+                }
+            }
+            alert("done");
+        }
+        
+        network.on("click", function(params) {
+            if (params.nodes.length > 0) {
+                var nodeId = params.nodes[0];
+                var node = nodes.get(nodeId);
+                document.querySelector("#shelf").innerHTML = `
+                <strong>${node.label}</strong><br/>
+                <button onClick="alert('${nodeId}')">Get URL</button>
+                <button onClick="network.focus('${nodeId}', {scale: 1.5, animation: true})">Focus</button>
+                <button onClick="showOutgoing('${nodeId}')">Show Outgoing connections</button>
+                <button onClick="showIncoming('${nodeId}')">Show Incoming connections</button>
+                `;
+            } else {
+                document.querySelector("#shelf").innerHTML = "";
+            }
+        });
+
+        document.addEventListener("keydown", function(event) {
+            if (event.key === "+" || event.key === "=") {
+                zoomIn();
+            } else if (event.key === "-") {
+                zoomOut();
+            } else if (event.key === "0") {
+                resetView();
+            } else if (event.key === "p") {
+                togglePhysics();
+            }
+        });
+    </script>
+</body>
+</html>
