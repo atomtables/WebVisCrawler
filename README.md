@@ -5,6 +5,13 @@ internet rather than getting all your data and stealing it and
 selling it to some company that's going to use it to train an AI
 model.
 
+## DISCLAIMER
+while this project does make use of web crawling, it is not representative
+of all use cases of web crawling. this project does not respect robots.txt
+files, although it takes safe measures to avoid aggressive crawling. you
+use this project at your own risk for educational purposes only. no one
+is liable but you if you cause trouble.
+
 ## running
 create a venv and install requirements.txt. then run `python main.py <START_URL>` or run with -h for help.
 
