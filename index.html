@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WebVisCrawl</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f9f9f9;
+            padding-top: 20px;
+            padding-bottom: 50px;
+        }
+        pre {
+            background-color: #eee;
+            padding: 10px;
+            overflow-x: auto;
+        }
+        code {
+            background-color: #eee;
+            padding: 2px 4px;
+            font-family: monospace;
+        }
+        .section {
+            margin-bottom: 40px;
+        }
+        .btn-demo {
+            margin: 5px 5px 5px 0;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <div class="page-header">
+        <h1>WebVisCrawl</h1>
+        <p class="lead">A really nice web crawler that focuses more on branching out the internet rather than getting all your data and selling it to some company that's going to use it to train an AI model.</p>
+    </div>
+
+    <div class="section">
+        <h2>Available for your own demo at PyPi!!!</h2>
+        <pre><code>pip install webviscrawl==0.0.0</code></pre>
+        <p>The pip package exposes two executables: <code>webviscrawler</code> and <code>webvisualiser</code>. You can get info on these by running them with <code>--help</code>.</p>
+    </div>
+
+    <div class="section">
+        <h2>Source on GitHub</h2>
+        <pre><code>git clone https://github.com/atomtables/WebVisCrawl</code></pre>
+    </div>
+
+    <div class="section">
+        <h2>Check out some readymade demos</h2>
+        <p>Don't feel like waiting 10 hours for 80,000 hits on different websites? Here are some readymade demos from <a href="//info.cern.ch" target="_blank">info.cern.ch</a>:</p>
+
+        <div class="btn-group">
+            <a href="samples/info-cern-ch_sample_50.html" class="btn btn-default btn-demo">50 URLs</a>
+            <a href="samples/info-cern-ch_sample_100.html" class="btn btn-default btn-demo">100 URLs</a>
+            <a href="samples/info-cern-ch_sample_500.html" class="btn btn-default btn-demo">500 URLs</a>
+            <a href="samples/info-cern-ch_sample_1000.html" class="btn btn-default btn-demo">1000 URLs</a>
+            <a href="samples/info-cern-ch_sample_2500.html" class="btn btn-default btn-demo">2500 URLs</a>
+            <a href="samples/info-cern-ch_sample_5000.html" class="btn btn-default btn-demo">5000 URLs</a>
+            <a href="samples/info-cern-ch_sample_10000.html" class="btn btn-default btn-demo">10000 URLs</a>
+            <a href="samples/info-cern-ch_sample_25000.html" class="btn btn-default btn-demo">25000 URLs</a>
+        </div>
+        <p><small>* 50,000+ samples not included due to file size and GitHub upload limits.</small></p>
+    </div>
+
+    <div class="section">
+        <h2>Running</h2>
+        <p>Create a <code>venv</code> and install <code>requirements.txt</code>. Then run:</p>
+        <pre><code>python main.py &lt;START_URL&gt;</code></pre>
+        <p>Or run with <code>-h</code> for help.</p>
+    </div>
+
+    <div class="section">
+        <h2>To Visualize</h2>
+        <p>Run:</p>
+        <pre><code>python vis.py --head &lt;START_URL&gt;</code></pre>
+        <p>The HTML should open in your web browser. You can also run with <code>-h</code> for help.</p>
+    </div>
+
+    <div class="section">
+        <h2>Speed Tests</h2>
+        <p><strong>Machine:</strong> MacBook Pro M2 (13in) under maximum load without IntelliJ.</p>
+
+        <div class="panel panel-default">
+            <div class="panel-heading"><strong>Original Implementation (Multithreading only)</strong></div>
+            <div class="panel-body">
+                <p>Example: <a href="https://hackclub.com" target="_blank">https://hackclub.com</a> to three levels:</p>
+                <ul>
+                    <li><strong>1 process:</strong>
+                        <ul>
+                            <li>76.88s, 4501 nodes, 7663 edges</li>
+                            <li>89.53s, 4792 nodes, 8058 edges</li>
+                            <li>92.21s, 5555 nodes, 8500 edges</li>
+                            <li>59.06s, 4405 nodes, 7052 edges</li>
+                            <li>90.55s, 4159 nodes, 7283 edges</li>
+                        </ul>
+                    </li>
+                    <li><strong>2 processes:</strong>
+                        <ul>
+                            <li>50.07s, 4977 nodes, 7963 edges</li>
+                            <li>37.63s, 2322 nodes, 3067 edges (exception in thread)</li>
+                            <li>40.19s, 956 nodes, 1541 edges</li>
+                            <li>38.43s, 3655 nodes, 6203 edges</li>
+                            <li>36.08s, 1285 nodes, 1786 edges</li>
+                        </ul>
+                    </li>
+                    <li><strong>4 processes:</strong> (data not listed)</li>
+                    <li><strong>8 processes:</strong> (data not listed)</li>
+                </ul>
+            </div>
+        </div>
+
+        <p>Redesigned to use queues and centralized message handling to avoid race conditions and improve accuracy (at some speed cost). Now includes Bloom filters for fast URL deduplication.</p>
+
+        <div class="panel panel-default">
+            <div class="panel-heading"><strong>New Implementation (with Queues & Bloom Filters)</strong></div>
+            <div class="panel-body">
+                <p>Example: <a href="https://hackclub.com" target="_blank">https://hackclub.com</a> to three levels:</p>
+
+                <ul>
+                    <li><strong>1 process:</strong>
+                        <ul>
+                            <li>252% CPU, 24.10s, 5786 nodes, 13376 edges</li>
+                            <li>304% CPU, 24.59s, 5134 nodes, 12645 edges</li>
+                            <li>309% CPU, 21.09s, 5153 nodes, 12316 edges</li>
+                            <li>328% CPU, 21.20s, 5226 nodes, 13191 edges</li>
+                            <li>349% CPU, 24.54s, 5709 nodes, 12572 edges</li>
+                        </ul>
+                    </li>
+                    <li><strong>2 processes:</strong>
+                        <ul>
+                            <li>393% CPU, 15.29s, 5165 nodes, 11732 edges</li>
+                            <li>388% CPU, 19.64s, 4559 nodes, 10296 edges*</li>
+                            <li>392% CPU, 18.50s, 5598 nodes, 12410 edges</li>
+                            <li>339% CPU, 19.00s, 4754 nodes, 9577 edges*</li>
+                            <li>354% CPU, 17.19s, 5231 nodes, 11774 edges</li>
+                        </ul>
+                    </li>
+                    <li><strong>4 processes:</strong>
+                        <ul>
+                            <li>501% CPU, 16.34s, 5149 nodes, 11129 edges</li>
+                            <li>476% CPU, 16.98s, 4681 nodes, 9674 edges*</li>
+                            <li>493% CPU, 16.42s, 5251 nodes, 11402 edges</li>
+                            <li>481% CPU, 17.22s, 5760 nodes, 11717 edges</li>
+                            <li>482% CPU, 15.55s, 4888 nodes, 11470 edges*</li>
+                        </ul>
+                    </li>
+                    <li><strong>8 processes:</strong>
+                        <ul>
+                            <li>577% CPU, 15.24s, 5320 nodes, 10127 edges</li>
+                            <li>610% CPU, 18.26s, 5665 nodes, 11293 edges</li>
+                            <li>594% CPU, 16.19s, 5335 nodes, 11936 edges</li>
+                            <li>578% CPU, 15.22s, 4312 nodes, 8807 edges*</li>
+                            <li>578% CPU, 15.35s, 5811 nodes, 13200 edges</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <p><em>*Dip in performance likely due to rate-limiting.</em></p>
+            </div>
+        </div>
+    </div>
+
+</div>
+</body>
+</html>
