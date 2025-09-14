@@ -6,7 +6,11 @@ import queue
 import select
 import signal
 import sys
-import termios
+try:
+    import termios
+except ImportError:
+    termios = None
+    print("termios does not seem to work on this system")
 import threading
 import time
 import tty
@@ -112,7 +116,7 @@ class WebVisCrawlerManager:
 
     def update(self):
         print(f'{Fore.GREEN}Found: {self.found}, {Fore.YELLOW}Processed: {self.processed}, '
-              f'{Fore.BLUE}Processing: {self.processing}, {Fore.CYAN}Threads: {'+'.join(map(str, self.subprocess_threadcounts))}, '#Empty: {len(self.empty)}, Skipped: {len(self.skipping)}, '
+              f'{Fore.BLUE}Processing: {self.processing}, {Fore.CYAN}Threads: {"+".join(map(str, self.subprocess_threadcounts))}, '#Empty: {len(self.empty)}, Skipped: {len(self.skipping)}, '
               f'{Fore.RED}Failed: {len(self.failed)},{Fore.RESET + Style.DIM} Processes: {len([t.is_alive() for t in self.threads])}, Queued: {self.queuesize}, Adj: {len(self.adjacency)}\033[K{Style.RESET_ALL}', end="\r")
 
     def start(self, num_processes=None, max_concurrent=500, level_limit=0, update_interval=5):
@@ -247,7 +251,7 @@ class WebVisCrawlerManager:
                 try:
                     if os.path.exists(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'vis.py')):
                         import subprocess
-                        response = subprocess.run([f'python3 {os.path.join(os.path.dirname(__file__), 'vis.py')} --head {clean_href(self.start_url)} {self.output_file}'], shell=True, check=True, cwd=os.getcwd())
+                        response = subprocess.run([f'python3 {os.path.join(os.path.dirname(__file__), "vis.py")} --head {clean_href(self.start_url)} {self.output_file}'], shell=True, check=True, cwd=os.getcwd())
                         if response.returncode != 0:
                             raise Exception(f"vis.py exited with code {response.returncode}")
                     else:

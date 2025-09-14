@@ -1,10 +1,5 @@
 # WebVisCrawl
 
-a really nice web crawler that focuses more on branching out the
-internet rather than getting all your data and stealing it and
-selling it to some company that's going to use it to train an AI
-model.
-
 ## DISCLAIMER
 while this project does make use of web crawling, it is not representative
 of all use cases of web crawling. this project does not respect robots.txt

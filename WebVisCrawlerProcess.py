@@ -8,7 +8,6 @@ import time
 import traceback
 from multiprocessing.queues import Queue as queue_t
 from urllib.parse import urlparse, parse_qs, urlunparse, urlencode
-from warnings import deprecated
 
 import requests
 from bs4 import BeautifulSoup
@@ -49,7 +48,6 @@ class WebVisCrawlerProcess:
     # also openx counts are definitely inaccurate in this call because of how
     # unpredictable and unsafe this function is
     @staticmethod
-    @deprecated("horrible solution to a problem i made")
     def _async_raise(self, thread, exctype):
         if not thread.is_alive(): return
         if not isinstance(exctype, type):
@@ -119,7 +117,8 @@ class WebVisCrawlerProcess:
                         'url': url,
                         'failed': True
                     })
-                    self.printx(f"Catastrophic error fetching {url}: {'\n'.join(traceback.format_exception(e))}") if self.debug else None
+                    dbg = "\n".join(traceback.format_exception(e))
+                    self.printx(f"Catastrophic error fetching {url}: {dbg}") if self.debug else None
                     return
                 self.intq.put({
                     'url': url,
@@ -132,12 +131,14 @@ class WebVisCrawlerProcess:
                     'url': url,
                     'failed': True
                 })
+                dbg = "\n".join(traceback.format_exception(e))
                 print(f"[{self.process}]: Extreme catastrophic error fetching {url}: {repr(e)}")
-                self.printx(f"Extreme catastrophic error fetching {url}: {'\n'.join(traceback.format_exception(e))}")
+                self.printx(f"Extreme catastrophic error fetching {url}: {dbg}")
                 return
         except Exception as e:
+            dbg = "\n".join(traceback.format_exception(e))
             print(f"[{self.process}]: Unhandled exception in init for {url}: {repr(e)}")
-            self.printx(f"Unhandled exception in init for {url}: {'\n'.join(traceback.format_exception(e))}")
+            self.printx(f"Unhandled exception in init for {url}: {dbg}")
             self.intq.put({
                 'url': url,
                 'failed': True
