@@ -8,12 +8,13 @@ import signal
 import sys
 try:
     import termios
+    import tty
 except ImportError:
     termios = None
+    tty = None
     print("termios does not seem to work on this system")
 import threading
 import time
-import tty
 
 import psutil
 from multiprocessing import Queue
