@@ -185,8 +185,8 @@ class WebVisCrawlVis:
 <head>
     <meta charset="utf-8">
     <title>Web Crawler Visualization</title>
-    <script type="text/javascript" src="https://unpkg.com/vis-network@10.0.1/dist/vis-network.min.js"></script>
-    <link href="https://unpkg.com/vis-network@10.0.1/styles/vis-network.min.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="https://unpkg.com/vis-network/dist/vis-network.min.js"></script>
+    <link href="https://unpkg.com/vis-network/styles/vis-network.min.css" rel="stylesheet" type="text/css" />
     <style type="text/css">
         #mynetwork {{
             width: 100%;

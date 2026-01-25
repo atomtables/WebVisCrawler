@@ -8,3 +8,5 @@ OUTPUT.html
 build
 *.egg-info
 *.bin
+# the servers aren't ready for this one yet...
+/samples/info-cern-ch_sample_MAX.html
